@@ -12,10 +12,7 @@ WINDOW_SHORT = 90
 DESIRED_COLUMNS = ['Close']
 WEEK = 5
 
-def main():
-    responses, img = gen_all_info('.tickers.txt')
-
-def gen_all_info(file_name='.tickers.txt'):
+def gen_all_info(file_name):
     tickers, df_dict = gen_data_from_file(file_name)
 
     keep_list = list()
@@ -73,12 +70,11 @@ def identify_type_of_crossing(ticker, df):
     print('buy signal for: ' + ticker)
     return True
 
-def gen_data_from_file(tickers_filename='.tickers.txt'):
+def gen_data_from_file(tickers_filename):
     """
     generates a dict of dataframes of closing price and simple moving averages
     for all valid tickers in a file
 
-    if tickers_filename is not provided the default '.tickers.txt' is used
     if tickers_filename is not a file in the directory this function is run
     the function raise a FileNotFound exception
     """
@@ -90,7 +86,7 @@ def gen_data_from_file(tickers_filename='.tickers.txt'):
         df = gen_SMA_df(ticker)
         if df is None:
             desired_tickers.remove(ticker)
-            print("issue with ticker: " + ticker)
+            print('No data found for ticker: ' + ticker)
         else:
             df_dict[ticker] = df
 
@@ -167,9 +163,10 @@ def gen_timeplot(df_dict=None, tickers=None):
             col = 0
             row += 1
         # no bound check on rows, size <= nrows * ncols must be true
+
     fig.canvas.set_window_title("Plot:")
     fig.tight_layout()
-#    plt.show()
+    # plt.show()
 
     img_name = 'plot_SMA_' + str(tickers)[1:-1].replace(', ','_').replace('\'','') + '.png'
     fig.savefig(img_name)
@@ -224,5 +221,3 @@ def read_tickers(tickers_filename):
     f.close()
     return list(tickers_set)
 
-if __name__ == '__main__':
-    main()

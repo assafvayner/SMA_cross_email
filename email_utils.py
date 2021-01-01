@@ -86,8 +86,8 @@ def send_email(service, content, sender):
     to the credentials used to build service
     """
     try:
-        message = (service.users().messages().send(userId=sender, body=message).execute())
+        message = (service.users().messages().send(userId=sender, body=content).execute())
         # returns status of sending the email
         return message
-    except (HttpError, error) as e:
-        print('An error occurred: %s' % e)
+    except HttpError as error:
+        print('An error occurred: %s' % error)
