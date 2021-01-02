@@ -22,7 +22,7 @@ def gen_all_info(file_name):
         if crossing:
             keep_list.append(ticker)
             responses.append((ticker, signal))
-    
+
     plot_file = gen_timeplot(df_dict, keep_list)
     return responses, plot_file
 
@@ -32,10 +32,10 @@ def identify_crossing(ticker, df):
     """
     # only concerned about 1 week's worth of data
     # 5 rows
-    tail = df.tail(5).copy(deep=True)
+    tail = df.tail(WEEK).copy(deep=True)
     tail['SMA_diff'] = tail['SMA_LONG_Close'] - tail['SMA_SHORT_Close']
     tail['SMA_diff'] = tail['SMA_diff'].apply(abs)
-    tail = tail[tail['SMA_diff'] < 0.01 * tail['Single_Day_Close']]
+    tail = tail[tail['SMA_diff'] < 0.01 * tail['SMA_LONG_Close']]
     if len(tail) > 0:
         print('There is a SMA crossing for ' + ticker + '. Detrmining what kind of crossing.')
         # return value of identify_type_of_crossing is unused
@@ -49,25 +49,25 @@ def identify_type_of_crossing(ticker, df):
     determines given the moving averages in the dataframe if it is correct
     to buy or sell at this time, given that there is an intersection
     """
-    df = df.tail(4 * WEEK).copy(deep=True)
+    df = df.tail(WEEK).copy(deep=True)
     df['SMA_diff'] = df['SMA_LONG_Close'] - df['SMA_SHORT_Close']
     mean_diff = df['SMA_diff'].mean()
     
     # if difference not significant don't indicate any signal
-    if abs(mean_diff) < 0.05 * df['Single_Day_Close'].max():
+    if abs(mean_diff) > 0.05 * df['SMA_LONG_Close'].max():
         print('no sell or buy signal for: ' + ticker)
         return None
 
     # if the mean difference used to be negative then the LONG WINDOW SMA
     # is now going above the SHORT WINDOW SMA which is a sell signal
     if mean_diff < 0:
-        print('sell signal for: ' + ticker)
+        print('SELL signal for: ' + ticker)
         return False
 
     # if the condition is false, and mean_diff was positive, then the
     # SHORT WINDOW SMA is going above the LONG WINDOW SMA which is a
     # buy signal
-    print('buy signal for: ' + ticker)
+    print('BUY signal for: ' + ticker)
     return True
 
 def gen_data_from_file(tickers_filename):
@@ -113,17 +113,14 @@ def gen_timeplot(df_dict=None, tickers=None):
     if the length of tickers and df_dict do not match or the length of either
     is 0, returns None
     """
-    plt.close('all') # for safety
-
     if df_dict is None:
         return None 
 
+    # make graph for all dataframes in the dict if not specific list given
     if tickers is None:
         tickers = list(df_dict.keys())
 
-    size = len(tickers)
-    
-    if size == 0 or size != len(df_dict):
+    if len(tickers) == 0 or len(df_dict) == 0 or not tickers[0] in df_dict.keys():
         return None 
 
     # parameters are 1 string and 1 dataframe, convert to list and
@@ -138,6 +135,15 @@ def gen_timeplot(df_dict=None, tickers=None):
     if not isinstance(df_dict, dict) or not isinstance(df_dict[tickers[0]], pd.DataFrame):
         raise TypeError("df_dict must be a dictionary of dataframs or a single dataframe")
 
+    temp = []
+    for ticker in tickers:
+        if not ticker in df_dict.keys():
+            print(ticker + ' not in df_dict.keys(), cannot create plot for: ' + ticker)
+            continue
+        temp.append(ticker)
+    ticker = temp
+
+    size = len(tickers)
 
     ncols = math.ceil(math.sqrt(size))
     nrows = math.ceil(size / ncols)
@@ -166,7 +172,6 @@ def gen_timeplot(df_dict=None, tickers=None):
 
     fig.canvas.set_window_title("Plot:")
     fig.tight_layout()
-    # plt.show()
 
     img_name = 'plot_SMA_' + str(tickers)[1:-1].replace(', ','_').replace('\'','') + '.png'
     fig.savefig(img_name)

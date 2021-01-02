@@ -25,11 +25,11 @@ def load_credentials_build_service():
             creds = pickle.load(token)
     #if there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
-        # if creds and creds.expired and creds.refresh_token:
-        #    creds.refresh(Request())
-        #else:
-        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS, SCOPES)
-        creds = flow.run_local_server(port=0)
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS, SCOPES)
+            creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
@@ -58,6 +58,8 @@ def create_email(sender, reciever, subject, text_content, img_filename):
     email_content.attach(MIMEText(text_content))
     if img_filename is not None:
         email_content.attach(gen_MIMEImage(img_filename))
+    else:
+        print('img file was None')
 
     b64_bytes = base64.urlsafe_b64encode(email_content.as_bytes())
     b64_str = b64_bytes.decode()
