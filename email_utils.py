@@ -93,3 +93,6 @@ def send_email(service, content, sender):
         return message
     except HttpError as error:
         print('An error occurred: %s' % error)
+        return error
+
+

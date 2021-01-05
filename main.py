@@ -2,10 +2,37 @@ import email_utils
 import data_handling
 import sys
 import argparse
+import flask
+import os
+
+def run_process_from_http(request):
+    """
+    request is a flask.Request HTTP request object
+    returns response text to the client that made the http request
+    """
+    request_json = request.get_json()
+    if not request_json or not 'email' in request_json or not 'tickers' in request_json:
+        return abort(400, 'parameters missing')
+    
+    email_address = request_json['email']
+    tickers = request_json['tickers']
+
+    if not tickers.endswith('.txt'):
+        make_hidden_tickers_file(tickers)
+        ticker_file = '.tickers.txt'
+    elif not os.path.exists(tickers):
+        return abort(404, 'tickers file not found')
+    else:
+        ticker_file = tickers
+     
+    results = process_everything(tickers_file, email)
+    return results[0] + '\n\nemail return status: ' + results[1]
 
 def main():
     tickers_file, email_address = parse_args()
+    process_everything(tickers_file, email)
 
+def process_everything(tickers_file, email):
     # break down content of get_all_info into this main
     responses, img_filename = data_handling.gen_all_info(tickers_file)
 
@@ -20,7 +47,8 @@ def main():
 
     email_encoded = email_utils.create_email(email_address, email_address,
                                             'SMA Crossovers', content, img_filename)
-    email_utils.send_email(email_service, email_encoded, email_address)
+    email_return message = email_utils.send_email(email_service, email_encoded, email_address)
+    return (content, email_return message)
 
 
 def parse_args():
@@ -48,10 +76,7 @@ def parse_args():
             raise ValueError('Given tickers file is not a \'.txt\' file.')
         tickers_file = args.file
     elif args.tickers:
-        tickers_file = '.tickers.txt'
-        with open(tickers_file, 'w+') as f:
-            for ticker in args.tickers:
-                f.write(ticker + '\n')
+        make_hidden_tickers_file(args.tickers)
     else:
         raise TypeError('No tickers text file or list of tickers given')
      
@@ -61,6 +86,12 @@ def parse_args():
         raise ValueError("Not a valid email address.")
     
     return tickers_file, email_address
+
+def make_hidden_tickers_file(tickers):
+    with open('.tickers.txt', 'w+') as f:
+        for ticker in args.tickers:
+            f.write(ticker + '\n')
+
 
 def make_email_text_content(responses):
     """
