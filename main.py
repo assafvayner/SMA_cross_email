@@ -19,18 +19,18 @@ def run_process_from_http(request):
 
     if not tickers.endswith('.txt'):
         make_hidden_tickers_file(tickers)
-        ticker_file = '.tickers.txt'
+        tickers_file = '.tickers.txt'
     elif not os.path.exists(tickers):
         return abort(404, 'tickers file not found')
     else:
-        ticker_file = tickers
+        tickers_file = tickers
      
     results = process_everything(tickers_file, email)
     return results[0] + '\n\nemail return status: ' + results[1]
 
 def main():
     tickers_file, email_address = parse_args()
-    process_everything(tickers_file, email)
+    process_everything(tickers_file, email_address)
 
 def process_everything(tickers_file, email):
     # break down content of get_all_info into this main
@@ -47,8 +47,8 @@ def process_everything(tickers_file, email):
 
     email_encoded = email_utils.create_email(email_address, email_address,
                                             'SMA Crossovers', content, img_filename)
-    email_return message = email_utils.send_email(email_service, email_encoded, email_address)
-    return (content, email_return message)
+    email_return = email_utils.send_email(email_service, email_encoded, email_address)
+    return (content, email_return)
 
 
 def parse_args():
