@@ -10,35 +10,44 @@ def run_process_from_http(request):
     request is a flask.Request HTTP request object
     returns response text to the client that made the http request
     """
-    request_json = request.get_json()
-    if not request_json or not 'email' in request_json or not 'tickers' in request_json:
-        return abort(400, 'parameters missing')
+    request_json = request.get_json(silent=True)
+    if request_json is None or not 'email' in request_json or not 'tickers' in request_json:
+        return flask.abort(400, 'parameters missing')
     
     email_address = request_json['email']
     tickers = request_json['tickers']
+    
+    # default
+    tickers_file = '/tmp/.tickers.txt'
 
-    if not tickers.endswith('.txt'):
+    if isinstance(tickers, list):
         make_hidden_tickers_file(tickers)
-        tickers_file = '.tickers.txt'
     elif not os.path.exists(tickers):
-        return abort(404, 'tickers file not found')
+        return flask.abort(404, 'tickers file not found')
     else:
         tickers_file = tickers
      
-    results = process_everything(tickers_file, email)
-    return results[0] + '\n\nemail return status: ' + results[1]
+    responses, email_return = process_everything(tickers_file, email_address)
+    if responses is None:
+        return None
+
+    result_response = make_resulting_response(responses, email_return)
+    return result_response
 
 def main():
     tickers_file, email_address = parse_args()
     process_everything(tickers_file, email_address)
 
-def process_everything(tickers_file, email):
+def process_everything(tickers_file, email_address):
     # break down content of get_all_info into this main
     responses, img_filename = data_handling.gen_all_info(tickers_file)
+    
+    if os.path.exists('/tmp/.tickers.txt'):
+        os.remove('/tmp/.tickers.txt')
 
     if len(responses) < 1:
         print("no relevant info to report")
-        sys.exit(0)
+        return None, None
     
 
     content = make_email_text_content(responses)
@@ -48,8 +57,20 @@ def process_everything(tickers_file, email):
     email_encoded = email_utils.create_email(email_address, email_address,
                                             'SMA Crossovers', content, img_filename)
     email_return = email_utils.send_email(email_service, email_encoded, email_address)
-    return (content, email_return)
 
+    return responses, email_return
+
+def make_resulting_response(resonses, email_status):
+    """
+    returns the email_status dict with added ticker keys pointing to signal
+    values which would produce a jsonifyable output
+    """
+    for response, signal in responses:
+        if signal is None:
+            email_status[response] = 'No strong signal'
+            continue
+        email_status[response] = 'BUY' if signal else 'SELL'
+    return email_status
 
 def parse_args():
     """
@@ -77,6 +98,7 @@ def parse_args():
         tickers_file = args.file
     elif args.tickers:
         make_hidden_tickers_file(args.tickers)
+        tickers_file = '/tmp/.tickers.txt'
     else:
         raise TypeError('No tickers text file or list of tickers given')
      
@@ -88,8 +110,8 @@ def parse_args():
     return tickers_file, email_address
 
 def make_hidden_tickers_file(tickers):
-    with open('.tickers.txt', 'w+') as f:
-        for ticker in args.tickers:
+    with open('/tmp/.tickers.txt', 'w+') as f:
+        for ticker in tickers:
             f.write(ticker + '\n')
 
 

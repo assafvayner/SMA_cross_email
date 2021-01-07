@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import errno
 import math
+from datetime import date
 
 PERIOD = '360d' # to make 180 running average for 180 days
 WINDOW_LONG = 180
@@ -172,8 +173,9 @@ def gen_timeplot(df_dict=None, tickers=None):
 
     fig.canvas.set_window_title("Plot:")
     fig.tight_layout()
-
-    img_name = 'plot_SMA_' + str(tickers)[1:-1].replace(', ','_').replace('\'','') + '.png'
+    
+    date_str = str(date.today())
+    img_name = '/tmp/plot_SMA_' + date_str + '.png'
     fig.savefig(img_name)
     return img_name
 

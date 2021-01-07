@@ -76,7 +76,7 @@ def gen_MIMEImage(file_name):
     with open(file_name, 'rb') as f:
         img_raw = f.read()
     img_mime = MIMEImage(img_raw, 'png')
-    img_mime.add_header('Content-Disposition', 'attachment', filename=file_name)
+    img_mime.add_header('Content-Disposition', 'attachment', filename=file_name[4:])
     return img_mime
 
 def send_email(service, content, sender):
