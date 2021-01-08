@@ -60,16 +60,17 @@ def process_everything(tickers_file, email_address):
 
     return responses, email_return
 
-def make_resulting_response(resonses, email_status):
+def make_resulting_response(responses, email_status):
     """
     returns the email_status dict with added ticker keys pointing to signal
     values which would produce a jsonifyable output
     """
-    for response, signal in responses:
+    for response in responses:
+        ticker, signal = response
         if signal is None:
-            email_status[response] = 'No strong signal'
+            email_status[ticker] = 'No strong signal'
             continue
-        email_status[response] = 'BUY' if signal else 'SELL'
+        email_status[ticker] = 'BUY' if signal else 'SELL'
     return email_status
 
 def parse_args():
