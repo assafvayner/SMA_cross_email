@@ -10,9 +10,11 @@ def run_process_from_http(request):
     request is a flask.Request HTTP request object
     returns response text to the client that made the http request
     """
-    request_json = request.get_json(silent=True)
+    request_json = request.get_json(silent=True, force=True)
+
     if request_json is None or not 'email' in request_json or not 'tickers' in request_json:
-        return flask.abort(400, 'parameters missing')
+        response = 'parameters missing\n\ngiven:\n' + str(request_json) + '\n' + str(request)
+        return flask.abort(400, response)
     
     email_address = request_json['email']
     tickers = request_json['tickers']
@@ -28,8 +30,6 @@ def run_process_from_http(request):
         tickers_file = tickers
      
     responses, email_return = process_everything(tickers_file, email_address)
-    if responses is None:
-        return None
 
     result_response = make_resulting_response(responses, email_return)
     return result_response
@@ -46,8 +46,7 @@ def process_everything(tickers_file, email_address):
         os.remove('/tmp/.tickers.txt')
 
     if len(responses) < 1:
-        print("no relevant info to report")
-        return None, None
+        responses = "no relevant info to report"
     
 
     content = make_email_text_content(responses)
@@ -126,6 +125,9 @@ def make_email_text_content(responses):
     False: SELL
     None: No strong signal but there is an SMA intersection
     """
+    if isinstance(responses, str):
+        return responses
+
     res = ""
     for response in responses:
         ticker, signal = response
